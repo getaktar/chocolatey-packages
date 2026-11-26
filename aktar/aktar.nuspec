@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>aktar</id>
+    <version>0.16.1</version>
+    <packageSourceUrl>https://github.com/getaktar/chocolatey-packages/tree/main/aktar</packageSourceUrl>
+    <owners>getaktar</owners>
+    <title>Aktar</title>
+    <authors>Mert Topuz</authors>
+    <projectUrl>https://getaktar.com</projectUrl>
+    <iconUrl>https://getaktar.com/app-icon.png</iconUrl>
+    <licenseUrl>https://github.com/getaktar/desktop/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/getaktar/desktop</projectSourceUrl>
+    <docsUrl>https://getaktar.com/guides/</docsUrl>
+    <bugTrackerUrl>https://github.com/getaktar/desktop/issues</bugTrackerUrl>
+    <releaseNotes>https://getaktar.com/changelog/for/windows/</releaseNotes>
+    <tags>aktar upload s3 cloudflare-r2 backblaze-b2 minio screenshot file-sharing sharex-alternative foss</tags>
+    <summary>Upload files, screenshots and the clipboard to your own S3, Cloudflare R2 or Backblaze B2 bucket and get a link.</summary>
+    <description><![CDATA[Aktar uploads files, screenshots and the clipboard to **your own** storage: Amazon S3, Cloudflare R2, Backblaze B2, DigitalOcean Spaces, MinIO or any S3-compatible service. The link is on your clipboard a moment later.
+
+- Drop files on the tray icon or the panel, or use the global shortcut for the clipboard.
+- Capture a screenshot with Snipping Tool, ShareX or Flameshot, and upload what you annotate.
+- Watched folders, short links, QR codes, expiring uploads, image processing (WebP, AVIF, resize), share pages and file requests.
+- Upload history with thumbnails and a bucket browser.
+- No servers, no accounts, no tracking: files go straight from your PC to your bucket, and keys stay in Windows Credential Manager.
+
+Aktar is free and open source, with apps for macOS, Linux, iPhone and Android too.
+
+## Package notes
+
+The package runs Aktar's own installer, which installs per user into `%LOCALAPPDATA%\Aktar` for the user running Chocolatey, and keeps itself up to date.
+]]></description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

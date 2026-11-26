@@ -1,0 +1,73 @@
+name: Update
+
+# Follows getaktar/desktop: when it has a newer release, the package gets the
+# new version, URL and checksum, is tested, pushed to the Chocolatey community
+# repository (when the CHOCO_API_KEY secret is set) and committed.
+on:
+  schedule:
+    - cron: '40 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Newer release?
+        id: check
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $latest = (gh release view --repo getaktar/desktop --json tagName -q .tagName).TrimStart('v')
+          [xml]$nuspec = Get-Content aktar/aktar.nuspec
+          $current = $nuspec.package.metadata.version
+          "latest=$latest" >> $env:GITHUB_OUTPUT
+          "changed=$($latest -ne $current)" >> $env:GITHUB_OUTPUT
+          Write-Host "package $current, release $latest"
+      - name: Update the package
+        if: steps.check.outputs.changed == 'True'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.check.outputs.latest }}
+        run: |
+          $url = "https://github.com/getaktar/desktop/releases/download/v$env:VERSION/Aktar_$($env:VERSION)_x64-setup.exe"
+          Invoke-WebRequest -Uri $url -OutFile setup.exe
+          $sum = (Get-FileHash setup.exe -Algorithm SHA256).Hash.ToLower()
+          Remove-Item setup.exe
+          (Get-Content aktar/aktar.nuspec -Raw) -replace '<version>[^<]+</version>', "<version>$env:VERSION</version>" | Set-Content aktar/aktar.nuspec -NoNewline
+          $install = Get-Content aktar/tools/chocolateyinstall.ps1 -Raw
+          $install = $install -replace "url64bit\s*=\s*'[^']+'", "url64bit       = '$url'" -replace "checksum64\s*=\s*'[^']+'", "checksum64     = '$sum'"
+          Set-Content aktar/tools/chocolateyinstall.ps1 $install -NoNewline
+          git diff --stat
+      - name: Pack and install
+        if: steps.check.outputs.changed == 'True'
+        shell: pwsh
+        run: |
+          choco pack aktar/aktar.nuspec --outputdirectory out
+          choco install aktar --source "'$PWD\out'" --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco install failed ($LASTEXITCODE)" }
+          if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'Aktar\aktar.exe'))) { throw 'aktar.exe not installed' }
+      - name: Push to Chocolatey
+        if: steps.check.outputs.changed == 'True' && env.CHOCO_API_KEY != ''
+        shell: pwsh
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+          VERSION: ${{ steps.check.outputs.latest }}
+        run: |
+          choco push "out/aktar.$env:VERSION.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
+          if ($LASTEXITCODE -ne 0) { throw "choco push failed ($LASTEXITCODE)" }
+      - name: Commit
+        if: steps.check.outputs.changed == 'True'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.check.outputs.latest }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add aktar
+          git commit -m "aktar $env:VERSION"
+          git push

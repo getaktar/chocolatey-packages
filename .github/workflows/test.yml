@@ -1,0 +1,37 @@
+name: Test
+
+# Packs the package and installs and uninstalls it with Chocolatey on a clean
+# Windows runner.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  aktar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Pack
+        shell: pwsh
+        run: choco pack aktar/aktar.nuspec --outputdirectory out
+      - name: Install
+        shell: pwsh
+        run: |
+          choco install aktar --source "'$PWD\out'" --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco install failed ($LASTEXITCODE)" }
+          $exe = Join-Path $env:LOCALAPPDATA 'Aktar\aktar.exe'
+          if (-not (Test-Path $exe)) { throw "aktar.exe not found at $exe" }
+          (Get-Item $exe).VersionInfo | Format-List ProductVersion
+      - name: Uninstall
+        shell: pwsh
+        run: |
+          choco uninstall aktar --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco uninstall failed ($LASTEXITCODE)" }
+          Start-Sleep -Seconds 3
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'Aktar\aktar.exe')) { throw 'aktar.exe is still there after uninstall' }
